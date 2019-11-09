@@ -1,0 +1,42 @@
+\documentclass{report}
+\usepackage{booktabs}
+\begin{document}\begin{center}
+\begin{tabular}{lclc}
+\toprule
+\textbf{Dep. Variable:}    &   verbalgrade2   & \textbf{  R-squared:         } &     0.677   \\
+\textbf{Model:}            &       OLS        & \textbf{  Adj. R-squared:    } &     0.676   \\
+\textbf{Method:}           &  Least Squares   & \textbf{  F-statistic:       } &     518.1   \\
+\textbf{Date:}             & Mon, 30 Sep 2019 & \textbf{  Prob (F-statistic):} &     0.00    \\
+\textbf{Time:}             &     19:25:15     & \textbf{  Log-Likelihood:    } &   -1904.2   \\
+\textbf{No. Observations:} &        2232      & \textbf{  AIC:               } &     3828.   \\
+\textbf{Df Residuals:}     &        2222      & \textbf{  BIC:               } &     3886.   \\
+\textbf{Df Model:}         &           9      & \textbf{                     } &             \\
+\bottomrule
+\end{tabular}
+\begin{tabular}{lcccccc}
+                         & \textbf{coef} & \textbf{std err} & \textbf{t} & \textbf{P$> |$t$|$} & \textbf{[0.025} & \textbf{0.975]}  \\
+\midrule
+\textbf{Intercept}       &       0.0371  &        0.061     &     0.604  &         0.546        &       -0.083    &        0.157     \\
+\textbf{grit}            &      -0.0126  &        0.026     &    -0.481  &         0.631        &       -0.064    &        0.039     \\
+\textbf{bananas}         &       0.0028  &        0.004     &     0.670  &         0.503        &       -0.005    &        0.011     \\
+\textbf{male}            &      -0.2051  &        0.025     &    -8.226  &         0.000        &       -0.254    &       -0.156     \\
+\textbf{raven}           &       0.1420  &        0.015     &     9.257  &         0.000        &        0.112    &        0.172     \\
+\textbf{mathscore1}      &       0.3967  &        0.018     &    21.704  &         0.000        &        0.361    &        0.433     \\
+\textbf{verbalscore1}    &       0.3415  &        0.019     &    18.212  &         0.000        &        0.305    &        0.378     \\
+\textbf{belief\_survey1} &       0.0699  &        0.016     &     4.476  &         0.000        &        0.039    &        0.101     \\
+\textbf{grit\_survey1}   &       0.0651  &        0.017     &     3.857  &         0.000        &        0.032    &        0.098     \\
+\textbf{csize}           &       0.0013  &        0.001     &     0.870  &         0.385        &       -0.002    &        0.004     \\
+\bottomrule
+\end{tabular}
+\begin{tabular}{lclc}
+\textbf{Omnibus:}       & 25.536 & \textbf{  Durbin-Watson:     } &    1.588  \\
+\textbf{Prob(Omnibus):} &  0.000 & \textbf{  Jarque-Bera (JB):  } &   27.191  \\
+\textbf{Skew:}          & -0.230 & \textbf{  Prob(JB):          } & 1.25e-06  \\
+\textbf{Kurtosis:}      &  3.285 & \textbf{  Cond. No.          } &     210.  \\
+\bottomrule
+\end{tabular}
+%\caption{OLS Regression Results}
+\end{center}
+
+Warnings: \newline
+ [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.\end{document}
