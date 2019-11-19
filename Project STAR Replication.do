@@ -25,7 +25,7 @@ use "C:\GitHub\STAR_Students.dta", clear
 gen regular=1 if gkclasssize < 28 & gkclasssize > 17
 *replace regular=0 if regular != 1 
 *gen regular=1 if gkclasstype == 2
-*replace regular=1 if gkclasstype == 3  
+*replace regular=1 if gkclasstype == 3
 
 **Percentile Total SAT**
 
@@ -91,18 +91,18 @@ forvalues i = 1/11601 {
 	qui replace temp = regular
 	if regular[`i'] != 1{
 		qui replace temp = 1 in `i'
-		qui replace temp = gktlistss*temp
+		qui replace temp = gkwordskillss*temp
 		qui egen pctile = mean((temp < temp[`i']) / (temp < .))
-		if missing(gktlistss[`i']){
+		if missing(gkwordskillss[`i']){
 			qui replace pctile = .
 		}
 		qui replace pct_hssatmath = pctile in `i'
 		qui drop pctile
 	}
 	else {
-		qui replace temp = gktlistss*temp
+		qui replace temp = gkwordskillss*temp
 		qui egen pctile = mean((temp < temp[`i']) / (temp < .))
-		if missing(gktlistss[`i']){
+		if missing(gkwordskillss[`i']){
 			qui replace pctile = .
 		}
 		qui replace pct_hssatmath = pctile in `i'
@@ -175,13 +175,69 @@ replace small=1 if regular==0
 sum pct_sat if small == 1
 sum pct_sat if regular == 1
 
+*Todo: Cluster standard errors.
 reg pct_sat ib(last).gkclasstype, robust
 reg pct_sat ib(last).gkclasstype i.gkschid, robust
 
-*Cluster standard errors
+*** Table I (Kindergarten)***
 
+*Variables*
+
+replace gkfreelunch=1 if gkfreelunch==1
+replace gkfreelunch=0 if gkfreelunch==2
+
+gen whiteasian = 1 if race == 1 | race == 3
+replace whiteasian = 0 if whiteasian != 1
+
+gen attritionsgk = 0 if flagsgk == 1 & flagsgk == 1 & flagsg1 == 1 & flagsg2 == 1 & flagsg3 == 1
+replace attritionsgk = 1 if attritionsgk != 0
+
+*Age reference is Sep. 30, 1985
+gen age85=(714900-((birthyear*12*30)+(birthmonth*30)+birthday))
+*gen age85=mdy(birthmonth,birthday,birthyear)
+*replace age85=mdy(9,1,1985)-age85
+replace age85=age85/365
+
+*Coefficients and p-values*
+
+reg gkfreelunch ibn.gkclasstype if flagsgk==1, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+reg whiteasian ibn.gkclasstype if flagsgk==1, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+*Todo: Age in 1985
+reg age85 ibn.gkclasstype if flagsgk==1, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+reg attritionsgk ibn.gkclasstype if flagsgk==1, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+reg gkclasssize ibn.gkclasstype if flagsgk==1, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+reg pct_sat ibn.gkclasstype if flagsgk==1, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+twoway kdensity pct_sat if gkclasstype == 1|| kdensity pct_sat if gkclasstype != 1, recast(line) lc(red)
+
+kdensity pct_sat if gkclasstype == 1
+kdensity pct_sat if gkclasstype != 1
+
+*** Table III ***
+*replace gkclasstype=1 if gkclasstype==.
+*check how to replace
+tab g1classsize gkclasstype
+mean g1classsize if gkclasstype == 1
+mean g1classsize if gkclasstype == 2
+mean g1classsize if gkclasstype == 3
+
+** Notes:
+*2 Different methods were tried to calculate the percentiles.
+*We kept the one that is closer to the paper.
 *Original: 54.7 and 49.9 with beta 4.82 and 5.37
 *Regular1: 52.98 and 48.54 with beta 4.41 and 4.97
 *Regular2: 52.90 and 48.54 with beta 4.35 and 4.83
+
 
 
