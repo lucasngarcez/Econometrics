@@ -6,6 +6,7 @@ ssc install outreg2
 ssc install ivreg2
 ssc install weakivtest
 ssc install avar
+ssc install ranktest
 
 *****Mergining Data Sets and Creating Variables*****
 
@@ -227,7 +228,7 @@ kdensity pct_sat if gkclasstype != 1
 *** Table III ***
 *replace gkclasstype=1 if gkclasstype==.
 *check how to replace
-tab g1classsize gkclasstype
+tab g1classsize g1classtype
 mean g1classsize if gkclasstype == 1
 mean g1classsize if gkclasstype == 2
 mean g1classsize if gkclasstype == 3
@@ -239,5 +240,31 @@ mean g1classsize if gkclasstype == 3
 *Regular1: 52.98 and 48.54 with beta 4.41 and 4.97
 *Regular2: 52.90 and 48.54 with beta 4.35 and 4.83
 
+*** Table I***
 
+reg gkfreelunch ibn.gkclasstype i.gkschid, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+  
+reg whiteasian ibn.gkclasstype i.gkschid, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+reg age85 ibn.gkclasstype i.gkschid, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+reg attritionsgk ibn.gkclasstype i.gkschid, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+reg gkclasssize ibn.gkclasstype i.gkschid, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+reg  pct_sat ibn.gkclasstype i.gkschid, noconstant
+test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+
+
+*** Table VII***
+
+reg pct_sat gkclasssize whiteasian gender gkfreelunch i.gktrace i.gkthighdegree i.gktcareer i.gkschid, r
+
+ivreg2 pct_sat (gkclasssize = i.gkclasstype) whiteasian gender gkfreelunch i.gktrace i.gkthighdegree i.gktcareer i.gkschid, r
+weakivtest
 
