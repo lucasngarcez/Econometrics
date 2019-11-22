@@ -1,270 +1,286 @@
 *** Install Packages ***
-global dir = "C:\GitHub\"
-cd "$dir"
-ssc install est2tex
-ssc install outreg2
-ssc install ivreg2
-ssc install weakivtest
-ssc install avar
-ssc install ranktest
+	global dir = "C:\GitHub\"
+	cd "$dir"
+	ssc install est2tex
+	ssc install outreg2
+	ssc install ivreg2
+	ssc install weakivtest
+	ssc install avar
+	ssc install ranktest
 
-*****Mergining Data Sets and Creating Variables*****
+*** Creating Variables ***
+	
+	** Open data **
+		clear
+		use "C:\GitHub\STAR_Students.dta", clear
 
-clear
-use "C:\GitHub\STAR_K-3_Schools.dta", clear
-sort schid
-save "C:\GitHub\STAR_K-3_Schools.dta", replace
+	**Grades**
+		global grades gk g1 g2 g3
+		*Todo: Check if it has to be global
 
-use "C:\GitHub\STAR_High_Schools.dta", clear
-sort hsid
-save "C:\GitHub\STAR_High_Schools.dta", replace
-
-use "C:\GitHub\STAR_Students.dta", clear
-
-**Regular class size dummy**
-
-gen regular=1 if gkclasssize < 28 & gkclasssize > 17
-*replace regular=0 if regular != 1 
-*gen regular=1 if gkclasstype == 2
-*replace regular=1 if gkclasstype == 3
-
-**Percentile Total SAT**
-
-gen temp = 0
-gen pct_hssattot = .
-forvalues i = 1/11601 {
-	qui replace temp = regular
-	if regular[`i'] != 1{
-		qui replace temp = 1 in `i'
-		qui replace temp = gktreadss*temp
-		qui egen pctile = mean((temp < temp[`i']) / (temp < .))
-		if missing(gktreadss[`i']){
-			qui replace pctile = .
+	** Free Lunch **
+		foreach grade of global grades{
+			replace `grade'freelunch=1 if `grade'freelunch==1
+			replace `grade'freelunch=0 if `grade'freelunch==2
 		}
-		qui replace pct_hssattot = pctile in `i'
-		qui drop pctile
-	}
-	else {
-		qui replace temp = gktreadss*temp
-		qui egen pctile = mean((temp < temp[`i']) / (temp < .))
-		if missing(gktreadss[`i']){
-			qui replace pctile = .
+		
+	** White and Asian **
+		gen whiteasian = 1 if race == 1 | race == 3
+		replace whiteasian = 0 if whiteasian != 1
+
+	**Master Teacher**
+		foreach grade of global grades{
+			gen masterteacher`grade' = 1 if `grade'thighdegree == 3 | `grade'thighdegree == 4 | `grade'thighdegree == 5 | `grade'thighdegree == 6
+			replace masterteacher`grade' = 0 if masterteacher`grade' != 1
+		}	
+		
+	**White Teacher**
+		foreach grade of global grades{
+			gen whiteteacher`grade' = 1 if `grade'trace == 1
+			replace whiteteacher`grade' = 0 if whiteteacher`grade' != 1
 		}
-		qui replace pct_hssattot = pctile in `i'
-		qui drop pctile
-	}
-}
-drop temp
 
-**Percentile Verbal SAT**
+	** Attrition **
+		gen attritionsgk = 0 if flagsgk == 1 & flagsg1 == 1 & flagsg2 == 1 & flagsg3 == 1
+		gen attritionsg1 = 0 if flagsg1 == 1 & flagsg2 == 1 & flagsg3 == 1
+		gen attritionsg2 = 0 if flagsg2 == 1 & flagsg3 == 1
+		gen attritionsg3 = 0
+		replace attritionsgk = 1 if attritionsgk != 0
+		replace attritionsg1 = 1 if attritionsg1 != 0
+		replace attritionsg2 = 1 if attritionsg2 != 0
+		*Todo: This is replacing missing values. Fix that.
 
-gen temp = 0
-gen pct_hssatverbal = .
-forvalues i = 1/11601 {
-	qui replace temp = regular
-	if regular[`i'] != 1{
-		qui replace temp = 1 in `i'
-		qui replace temp = gktmathss*temp
-		qui egen pctile = mean((temp < temp[`i']) / (temp < .))
-		if missing(gktmathss[`i']){
-			qui replace pctile = .
+	** Age **
+
+		*Age reference is Sep. 30, 1985
+		gen age85=(714900-((birthyear*12*30)+(birthmonth*30)+birthday))
+		*gen age85=mdy(birthmonth,birthday,birthyear)
+		*replace age85=mdy(9,1,1985)-age85
+		replace age85=age85/365
+
+	**Regular Class Size Dummy**
+
+		gen regular=1 if gkclasssize < 28 & gkclasssize > 17
+		*replace regular=0 if regular != 1 
+		*gen regular=1 if gkclasstype == 2
+		*replace regular=1 if gkclasstype == 3
+
+	**Percentile SAT 1**
+
+		foreach grade of global grades{ 
+			**Percentile Reading SAT**
+				gen temp = 0
+				gen pct_reading = .
+				forvalues i = 1/11601 {
+					qui replace temp = regular
+					if regular[`i'] != 1{
+						qui replace temp = 1 in `i'
+						qui replace temp = `grade'treadss*temp
+						qui egen pctile = mean((temp < temp[`i']) / (temp < .))
+						if missing(`grade'treadss[`i']){
+							qui replace pctile = .
+						}
+						qui replace pct_reading = pctile in `i'
+						qui drop pctile
+					}
+					else {
+						qui replace temp = `grade'treadss*temp
+						qui egen pctile = mean((temp < temp[`i']) / (temp < .))
+						if missing(`grade'treadss[`i']){
+							qui replace pctile = .
+						}
+						qui replace pct_reading = pctile in `i'
+						qui drop pctile
+					}
+				}
+				drop temp
+
+			**Percentile Math SAT**
+				gen temp = 0
+				gen pct_math = .
+				forvalues i = 1/11601 {
+					qui replace temp = regular
+					if regular[`i'] != 1{
+						qui replace temp = 1 in `i'
+						qui replace temp = `grade'tmathss*temp
+						qui egen pctile = mean((temp < temp[`i']) / (temp < .))
+						if missing(`grade'tmathss[`i']){
+							qui replace pctile = .
+						}
+						qui replace pct_math = pctile in `i'
+						qui drop pctile
+					}
+					else {
+						qui replace temp = `grade'tmathss*temp
+						qui egen pctile = mean((temp < temp[`i']) / (temp < .))
+						if missing(`grade'tmathss[`i']){
+							qui replace pctile = .
+						}
+						qui replace pct_math = pctile in `i'
+						qui drop pctile
+					}
+				}
+				drop temp
+
+			**Percentile Word SAT**
+				gen temp = 0
+				gen pct_word = .
+				forvalues i = 1/11601 {
+					qui replace temp = regular
+					if regular[`i'] != 1{
+						qui replace temp = 1 in `i'
+						qui replace temp = `grade'wordskillss*temp
+						qui egen pctile = mean((temp < temp[`i']) / (temp < .))
+						if missing(`grade'wordskillss[`i']){
+							qui replace pctile = .
+						}
+						qui replace pct_word = pctile in `i'
+						qui drop pctile
+					}
+					else {
+						qui replace temp = `grade'wordskillss*temp
+						qui egen pctile = mean((temp < temp[`i']) / (temp < .))
+						if missing(`grade'wordskillss[`i']){
+							qui replace pctile = .
+						}
+						qui replace pct_word = pctile in `i'
+						qui drop pctile
+					}
+				}
+				drop temp
+
+			**Total Percentile**
+				egen pct_sat_`grade' = rmean(pct_reading pct_word pct_math)
+				drop pct_reading
+				drop pct_word
+				drop pct_math
+				replace pct_sat_`grade' = pct_sat_`grade'*100
 		}
-		qui replace pct_hssatverbal = pctile in `i'
-		qui drop pctile
-	}
-	else {
-		qui replace temp = gktmathss*temp
-		qui egen pctile = mean((temp < temp[`i']) / (temp < .))
-		if missing(gktmathss[`i']){
-			qui replace pctile = .
+		*save "C:\GitHub\STAR_Students.dta"
+	
+	**Percentile SAT 2**
+
+	foreach grade of global grades{
+		foreach sub in tread tmath wordskill {
+			cumul `grade'`sub'ss if inrange(gkclasstype,2,3), gen(`grade'`sub'xt)
+			sort `grade'`sub'ss
+			qui replace `grade'`sub'xt=`grade'`sub'xt[_n-1] if `grade'`sub'ss==`grade'`sub'ss[_n-1] & gkclasstype==1
+			qui ipolate `grade'`sub'xt `grade'`sub'ss, gen(ipo)
+			qui replace `grade'`sub'xt=ipo if gkclasstype==1 & mi(`grade'`sub'xt)
+			drop ipo
 		}
-		qui replace pct_hssatverbal = pctile in `i'
-		qui drop pctile
+		egen `grade'SATxt = rmean(`grade'treadxt `grade'tmathxt `grade'wordskillxt)
+		qui replace `grade'SATxt=100*`grade'SATxt	
 	}
-}
-drop temp
+	** Use this for method 2
+	replace pct_sat_gk = (gkSATxt+pct_sat_gk)/2
+	replace pct_sat_g1 = (g1SATxt+pct_sat_g1)/2
+	replace pct_sat_g2 = (g2SATxt+pct_sat_g2)/2
+	replace pct_sat_g3 = (g3SATxt+pct_sat_g3)/2
+	
+	**Grade Entered Star**
 
-**Percentile Math SAT**
+		gen gradeenter=""
+		replace gradeenter="gk" if flagsgk==1
+		replace gradeenter="g1" if flagsgk==0 & flagsg1==1 
+		replace gradeenter="g2" if flagsgk==0 & flagsg1==0 & flagsg2==1
+		replace gradeenter="g3" if flagsgk==0 & flagsg1==0 & flagsg2==0 & flagsg3==1
 
-gen temp = 0
-gen pct_hssatmath = .
-forvalues i = 1/11601 {
-	qui replace temp = regular
-	if regular[`i'] != 1{
-		qui replace temp = 1 in `i'
-		qui replace temp = gkwordskillss*temp
-		qui egen pctile = mean((temp < temp[`i']) / (temp < .))
-		if missing(gkwordskillss[`i']){
-			qui replace pctile = .
-		}
-		qui replace pct_hssatmath = pctile in `i'
-		qui drop pctile
-	}
-	else {
-		qui replace temp = gkwordskillss*temp
-		qui egen pctile = mean((temp < temp[`i']) / (temp < .))
-		if missing(gkwordskillss[`i']){
-			qui replace pctile = .
-		}
-		qui replace pct_hssatmath = pctile in `i'
-		qui drop pctile
-	}
-}
-drop temp
-
-**Percentile Math SAT**
-
-gen pct_sat = 0
-*Check if one of the 3 are missing
-replace pct_sat = (pct_hssattot+pct_hssatmath+pct_hssatverbal)/3
-
-**Labeling variables**
-replace pct_hssattot = pct_hssattot*100 
-replace pct_hssatmath = pct_hssatmath*100 
-replace pct_hssatverbal = pct_hssatverbal*100 
-replace pct_sat = pct_sat*100 
-label variable pct_hssattot "PERCENTILE OF TOTAL SAT FOR POOLED REGULAR"
-label variable pct_hssatmath "PERCENTILE OF MATH SAT FOR POOLED REGULAR"
-label variable pct_hssatverbal "PERCENTILE OF VERBAL SAT FOR POOLED REGULAR"
-label variable pct_sat "AVERAGE PERCENTILE OF SAT FOR POOLED REGULAR"
-
-**Kindergarten school merge**
-
-sort gkschid
-rename gkschid schid
-merge m:1 schid using "C:\GitHub\STAR_K-3_Schools.dta"
-drop _merge
-rename schid gkschid 
-save "C:\GitHub\STAR_Students_Kindergarden.dta"
-
-
-**Grade 1 school merge**
-
-use "C:\GitHub\STAR_Students_Kindergarden.dta", clear
-sort g1schid
-rename g1schid schid
-merge m:1 schid using "C:\GitHub\STAR_K-3_Schools.dta"
-drop _merge
-save "C:\GitHub\STAR_Students_Grade1.dta"
-
-
-**Grade 2 school merge**
-
-use "C:\GitHub\STAR_Students_Kindergarden.dta", clear
-sort g2schid
-rename g2schid schid
-merge m:1 schid using "C:\GitHub\STAR_K-3_Schools.dta"
-drop _merge
-save "C:\GitHub\STAR_Students_Grade2.dta"
-
-
-**Grade 3 school merge**
-
-use "C:\GitHub\STAR_Students_Kindergarden.dta", clear
-sort g2schid
-rename g2schid schid
-merge m:1 schid using "C:\GitHub\STAR_K-3_Schools.dta"
-drop _merge
-save "C:\GitHub\STAR_Students_Grade3.dta"
+	**Class Assignment in First Year**
+		gen firstclasstype = .
+		foreach grade of global grades{
+			set varabbrev off
+			replace firstclasstype = `grade'classtype if gradeenter == "`grade'"
+		}	
 
 *** Table V ***
-use "C:\GitHub\STAR_Students_Kindergarden.dta"
-replace regular=0 if regular != 1
-gen small=0
-replace small=1 if regular==0
+	replace regular=0 if regular != 1
+	gen small=0
+	replace small=1 if regular==0
+	
+	foreach grade of global grades{	
 
-sum pct_sat if small == 1
-sum pct_sat if regular == 1
+		sum pct_sat_`grade' if small == 1
+		sum pct_sat_`grade' if regular == 1
 
-*Todo: Cluster standard errors.
-reg pct_sat ib(last).gkclasstype, robust
-reg pct_sat ib(last).gkclasstype i.gkschid, robust
+		reg pct_sat_`grade' ib(2).`grade'classtype, vce(cluster `grade'tchid)
+		reg pct_sat_`grade' ib(2).`grade'classtype i.`grade'schid, vce(cluster `grade'tchid)
+		reg pct_sat_`grade' ib(2).`grade'classsize whiteasian gender `grade'freelunch i.`grade'schid, vce(cluster `grade'tchid)
+		reg pct_sat_`grade' ib(2).`grade'classsize whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
 
-*** Table I (Kindergarten)***
+		reg firstclasstype ib(2).`grade'classtype, vce(cluster `grade'tchid)
+		reg firstclasstype ib(2).`grade'classtype i.`grade'schid, vce(cluster `grade'tchid)
+		reg firstclasstype ib(2).`grade'classsize whiteasian gender `grade'freelunch i.`grade'schid, vce(cluster `grade'tchid)
+		reg firstclasstype ib(2).`grade'classsize whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
+	}
 
-*Variables*
+*** Table I ***
 
-replace gkfreelunch=1 if gkfreelunch==1
-replace gkfreelunch=0 if gkfreelunch==2
+		foreach grade of global grades{		
+			*Todo: Write the correct entry in STAR
 
-gen whiteasian = 1 if race == 1 | race == 3
-replace whiteasian = 0 if whiteasian != 1
+			**Free Lunch**
+				reg `grade'freelunch ibn.`grade'classtype if flags`grade'==1, noconstant
+				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
 
-gen attritionsgk = 0 if flagsgk == 1 & flagsgk == 1 & flagsg1 == 1 & flagsg2 == 1 & flagsg3 == 1
-replace attritionsgk = 1 if attritionsgk != 0
+			**White Asian**
+				reg whiteasian ibn.`grade'classtype if flags`grade'==1, noconstant
+				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
 
-*Age reference is Sep. 30, 1985
-gen age85=(714900-((birthyear*12*30)+(birthmonth*30)+birthday))
-*gen age85=mdy(birthmonth,birthday,birthyear)
-*replace age85=mdy(9,1,1985)-age85
-replace age85=age85/365
+			**Age in 1985**
+				reg age85 ibn.`grade'classtype if flags`grade'==1, noconstant
+				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
 
-*Coefficients and p-values*
+			**Attrition**
+				reg attritions`grade' ibn.`grade'classtype if flags`grade'==1, noconstant
+				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
 
-reg gkfreelunch ibn.gkclasstype if flagsgk==1, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+			**Class Size**
+				reg `grade'classsize ibn.`grade'classtype if flags`grade'==1, noconstant
+				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
 
-reg whiteasian ibn.gkclasstype if flagsgk==1, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+			**Class Type**
+				reg pct_sat_`grade' ibn.`grade'classtype if flags`grade'==1, noconstant
+				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
 
-*Todo: Age in 1985
-reg age85 ibn.gkclasstype if flagsgk==1, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+		}
 
-reg attritionsgk ibn.gkclasstype if flagsgk==1, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
-
-reg gkclasssize ibn.gkclasstype if flagsgk==1, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
-
-reg pct_sat ibn.gkclasstype if flagsgk==1, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
-
-twoway kdensity pct_sat if gkclasstype == 1|| kdensity pct_sat if gkclasstype != 1, recast(line) lc(red)
-
-kdensity pct_sat if gkclasstype == 1
-kdensity pct_sat if gkclasstype != 1
-
+*** Density Graph ***
+	foreach grade of global grades{	
+		twoway kdensity pct_sat_`grade' if `grade'classtype == 1|| kdensity pct_sat_`grade' if `grade'classtype != 1, recast(line) lc(red)
+		*kdensity pct_sat_`grade' if `grade'classtype == 1
+		*kdensity pct_sat_`grade' if `grade'classtype != 1
+	}
+	**Test**
+	*twoway kdensity pct_sat_gk if gkclasstype == 1|| kdensity pct_sat_gk if gkclasstype != 1, recast(line) lc(red)
+	*twoway kdensity pct_sat_g1 if g1classtype == 1|| kdensity pct_sat_g1 if g1classtype != 1, recast(line) lc(red)
+	twoway kdensity pct_sat_g2 if g2classtype == 1|| kdensity pct_sat_g2 if g2classtype != 1, recast(line) lc(red)
+	*twoway kdensity pct_sat_g3 if g3classtype == 1|| kdensity pct_sat_g3 if g3classtype != 1, recast(line) lc(red)
+	
 *** Table III ***
-*replace gkclasstype=1 if gkclasstype==.
-*check how to replace
-tab g1classsize g1classtype
-mean g1classsize if gkclasstype == 1
-mean g1classsize if gkclasstype == 2
-mean g1classsize if gkclasstype == 3
+	*Todo: Check replace gkclasstype=1 if gkclasstype==.
+	*Todo: Check how to correcly replace
+	*Todo: Test for grade entered
+	tab g1classsize g1classtype
+	mean g1classsize if g1classtype == 1
+	mean g1classsize if g1classtype == 2
+	mean g1classsize if g1classtype == 3
 
-** Notes:
-*2 Different methods were tried to calculate the percentiles.
-*We kept the one that is closer to the paper.
-*Original: 54.7 and 49.9 with beta 4.82 and 5.37
-*Regular1: 52.98 and 48.54 with beta 4.41 and 4.97
-*Regular2: 52.90 and 48.54 with beta 4.35 and 4.83
+*** Table VII ***
+	
+	foreach grade of global grades{	
+		reg pct_sat_`grade' `grade'classsize whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
+		ivregress 2sls pct_sat_`grade' (`grade'classsize = i.`grade'classtype) whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
+		*weakivtest
+	}		
 
-*** Table I***
+*** Notes ***
 
-reg gkfreelunch ibn.gkclasstype i.gkschid, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
-  
-reg whiteasian ibn.gkclasstype i.gkschid, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
-
-reg age85 ibn.gkclasstype i.gkschid, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
-
-reg attritionsgk ibn.gkclasstype i.gkschid, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
-
-reg gkclasssize ibn.gkclasstype i.gkschid, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
-
-reg  pct_sat ibn.gkclasstype i.gkschid, noconstant
-test i1.gkclasstype == i2.gkclasstype == i3.gkclasstype
+	*2 Different methods were tried to calculate the percentiles.
+	*We kept the one that is closer to the paper.
+	*Original: 54.7 and 49.9 with beta 4.82 and 5.37
+	*Regular1: 52.98 and 48.54 with beta 4.41 and 4.97
+	*Regular2: 52.90 and 48.54 with beta 4.35 and 4.83
 
 
-*** Table VII***
-
-reg pct_sat gkclasssize whiteasian gender gkfreelunch i.gktrace i.gkthighdegree i.gktcareer i.gkschid, r
-
-ivreg2 pct_sat (gkclasssize = i.gkclasstype) whiteasian gender gkfreelunch i.gktrace i.gkthighdegree i.gktcareer i.gkschid, r
-weakivtest
 
