@@ -1,12 +1,25 @@
-*** Install Packages ***
+*** Lucas Garcez - Project STAR Replication ***
+
+*** Notes ***
+
+	* 2 Different methods were tried to calculate the percentiles.
+	* The first one is interpolating as suggested by prof. Carruthers.
+	* The second is adding each small individual to the regular & regular+aide pool and recalculating percentiles with the actual grade.
+	* At the end I calculated the average of the percentiles obtained with the two methods.
+	* It is easy to change it to have just one or the other method. See "Method Choice" comment below.
+	* Because recalculating for every individual is computationally intensive, expect 5 to 10 minutes to have all the percentiles calculated.
+
+*** Setting Directory ***
 	global dir = "C:\GitHub\"
 	cd "$dir"
-	ssc install est2tex
-	ssc install outreg2
-	ssc install ivreg2
-	ssc install weakivtest
-	ssc install avar
-	ssc install ranktest
+	
+*** Install Packages (If necessary) ***
+	*ssc install est2tex
+	*ssc install outreg2
+	*ssc install ivreg2
+	*ssc install weakivtest
+	*ssc install avar
+	*ssc install ranktest
 
 *** Creating Variables ***
 	
@@ -22,23 +35,40 @@
 		foreach grade of global grades{
 			replace `grade'freelunch=1 if `grade'freelunch==1
 			replace `grade'freelunch=0 if `grade'freelunch==2
+			label variable `grade'freelunch "FREE/REDUCED LUNCH STATUS. 1 IF LUNCH IS FREE"
 		}
 		
 	** White and Asian **
 		gen whiteasian = 1 if race == 1 | race == 3
 		replace whiteasian = 0 if whiteasian != 1
-
+		label variable whiteasian "1 IF CHILD IS WHITE OR ASIAN"
+		
+	** Transform Gender into Dummy **
+		replace gender = 0 if gender == 1
+		replace gender = 1 if gender == 2
+		label variable gender "STUDENT GENDER. 1 IF FEMALE"
+		
 	**Master Teacher**
 		foreach grade of global grades{
 			gen masterteacher`grade' = 1 if `grade'thighdegree == 3 | `grade'thighdegree == 4 | `grade'thighdegree == 5 | `grade'thighdegree == 6
 			replace masterteacher`grade' = 0 if masterteacher`grade' != 1
+			label variable masterteacher`grade' "TEACHERS WITH MASTERS DEGREE OR MORE. 1 IF MASTERS OR MORE"
 		}	
 		
 	**White Teacher**
 		foreach grade of global grades{
 			gen whiteteacher`grade' = 1 if `grade'trace == 1
 			replace whiteteacher`grade' = 0 if whiteteacher`grade' != 1
+			label variable whiteteacher`grade' "WHITE TEACHER. 0 IF NON-WHITE"
 		}
+		
+	**Transform Teacher Gender into Dummy**
+		foreach grade of global grades{
+			replace `grade'tgen = 0 if gender == 1
+			replace `grade'tgen = 1 if gender == 2
+			label variable `grade'tgen "TEACHER GENDER. 1 IF FEMALE"
+		}
+
 
 	** Attrition **
 		gen attritionsgk = 0 if flagsgk == 1 & flagsg1 == 1 & flagsg2 == 1 & flagsg3 == 1
@@ -48,24 +78,29 @@
 		replace attritionsgk = 1 if attritionsgk != 0
 		replace attritionsg1 = 1 if attritionsg1 != 0
 		replace attritionsg2 = 1 if attritionsg2 != 0
-		*Todo: This is replacing missing values. Fix that.
+		foreach grade of global grades{
+			label variable attritions`grade' "ATTRITION. 1 IF LEFT THE PROGRAM"
+		}
+		*Todo: This is replacing missing values. Check if it affects results.
 
 	** Age **
 
 		*Age reference is Sep. 30, 1985
 		gen age85=(714900-((birthyear*12*30)+(birthmonth*30)+birthday))
+		replace age85=age85/365
+		label variable age85 "APPROX. STUDENT AGE IN 1985"
 		*gen age85=mdy(birthmonth,birthday,birthyear)
 		*replace age85=mdy(9,1,1985)-age85
-		replace age85=age85/365
 
 	**Regular Class Size Dummy**
 
 		gen regular=1 if gkclasssize < 28 & gkclasssize > 17
+		label variable regular "REGULAR SIZE CLASS. 1 IF REGULAR"
 		*replace regular=0 if regular != 1 
 		*gen regular=1 if gkclasstype == 2
 		*replace regular=1 if gkclasstype == 3
 
-	**Percentile SAT 1**
+	**Percentile SAT Method (1)**
 
 		foreach grade of global grades{ 
 			**Percentile Reading SAT**
@@ -158,7 +193,7 @@
 		}
 		*save "C:\GitHub\STAR_Students.dta"
 	
-	**Percentile SAT 2**
+	**Percentile SAT Method (2)**
 
 	foreach grade of global grades{
 		foreach sub in tread tmath wordskill {
@@ -172,11 +207,23 @@
 		egen `grade'SATxt = rmean(`grade'treadxt `grade'tmathxt `grade'wordskillxt)
 		qui replace `grade'SATxt=100*`grade'SATxt	
 	}
-	** Use this for method 2
-	replace pct_sat_gk = (gkSATxt+pct_sat_gk)/2
-	replace pct_sat_g1 = (g1SATxt+pct_sat_g1)/2
-	replace pct_sat_g2 = (g2SATxt+pct_sat_g2)/2
-	replace pct_sat_g3 = (g3SATxt+pct_sat_g3)/2
+	** Method Choice: Edit here if you want just method (1) or just method (2)
+ 		egen temp = rmean(gkSATxt pct_sat_gk)
+		replace pct_sat_gk = temp
+		drop temp
+		label variable pct_sat_gk "AVERAGE SAT PERCENTILE IN KINDERGARTEN"
+		 egen temp = rmean(g1SATxt pct_sat_g1)
+		replace pct_sat_g1 = temp
+		drop temp
+		label variable pct_sat_g1 "AVERAGE SAT PERCENTILE IN GRADE 1"
+	 	egen temp = rmean(g2SATxt pct_sat_g2)
+		replace pct_sat_g2 = temp
+		drop temp
+		label variable pct_sat_g2 "AVERAGE SAT PERCENTILE IN GRADE 2"
+	 	egen temp = rmean(g3SATxt pct_sat_g3)
+		replace pct_sat_g3 = temp
+		drop temp
+		label variable pct_sat_g3 "AVERAGE SAT PERCENTILE IN GRADE 3"
 	
 	**Grade Entered Star**
 
@@ -185,77 +232,230 @@
 		replace gradeenter="g1" if flagsgk==0 & flagsg1==1 
 		replace gradeenter="g2" if flagsgk==0 & flagsg1==0 & flagsg2==1
 		replace gradeenter="g3" if flagsgk==0 & flagsg1==0 & flagsg2==0 & flagsg3==1
+		label variable gradeenter "GRADE WHEN ENTERED STAR"
 
 	**Class Assignment in First Year**
 		gen firstclasstype = .
 		foreach grade of global grades{
 			set varabbrev off
 			replace firstclasstype = `grade'classtype if gradeenter == "`grade'"
-		}	
+		}
+		label variable firstclasstype "CLASS ASSIGNMENT WHEN ENTERED STAR"
 
 *** Table V ***
-	replace regular=0 if regular != 1
-	gen small=0
-	replace small=1 if regular==0
-	
-	foreach grade of global grades{	
-
+	qui replace regular=0 if regular != 1
+	qui gen small=0
+	qui replace small=1 if regular==0
+	qui foreach grade of global grades{
+		matrix TableV`grade' = J(18, 8, .)
 		sum pct_sat_`grade' if small == 1
 		sum pct_sat_`grade' if regular == 1
-
-		reg pct_sat_`grade' ib(2).`grade'classtype, vce(cluster `grade'tchid)
-		reg pct_sat_`grade' ib(2).`grade'classtype i.`grade'schid, vce(cluster `grade'tchid)
-		reg pct_sat_`grade' ib(2).`grade'classsize whiteasian gender `grade'freelunch i.`grade'schid, vce(cluster `grade'tchid)
-		reg pct_sat_`grade' ib(2).`grade'classsize whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
-
-		reg firstclasstype ib(2).`grade'classtype, vce(cluster `grade'tchid)
-		reg firstclasstype ib(2).`grade'classtype i.`grade'schid, vce(cluster `grade'tchid)
-		reg firstclasstype ib(2).`grade'classsize whiteasian gender `grade'freelunch i.`grade'schid, vce(cluster `grade'tchid)
-		reg firstclasstype ib(2).`grade'classsize whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
 	}
+	qui foreach grade of global grades{
+		reg pct_sat_`grade' ib(2).`grade'classtype, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,1] = _b[1.`grade'classtype]
+		matrix TableV`grade'[2,1] = _se[1.`grade'classtype]
+		matrix TableV`grade'[3,1] = _b[3.`grade'classtype]
+		matrix TableV`grade'[4,1] = _se[3.`grade'classtype]
+		matrix TableV`grade'[17,1] = 0
+		matrix TableV`grade'[18,1] = e(r2)
+	}
+	qui foreach grade of global grades{
+		reg pct_sat_`grade' ib(2).`grade'classtype i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,2] = _b[1.`grade'classtype]
+		matrix TableV`grade'[2,2] = _se[1.`grade'classtype]
+		matrix TableV`grade'[3,2] = _b[3.`grade'classtype]
+		matrix TableV`grade'[4,2] = _se[3.`grade'classtype]
+		matrix TableV`grade'[17,2] = 1
+		matrix TableV`grade'[18,2] = e(r2)
+	}	
+	qui foreach grade of global grades{
+		reg pct_sat_`grade' ib(2).`grade'classtype whiteasian gender `grade'freelunch i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,3] = _b[1.`grade'classtype]
+		matrix TableV`grade'[2,3] = _se[1.`grade'classtype]
+		matrix TableV`grade'[3,3] = _b[3.`grade'classtype]
+		matrix TableV`grade'[4,3] = _se[3.`grade'classtype]
+		matrix TableV`grade'[5,3] = _b[whiteasian]
+		matrix TableV`grade'[6,3] = _se[whiteasian]
+		matrix TableV`grade'[7,3] = _b[gender]
+		matrix TableV`grade'[8,3] = _se[gender]
+		matrix TableV`grade'[9,3] = _b[`grade'freelunch]
+		matrix TableV`grade'[10,3] = _se[`grade'freelunch]
+		matrix TableV`grade'[17,3] = 1
+		matrix TableV`grade'[18,3] = e(r2)	
+	}
+	qui foreach grade of global grades{
+		reg pct_sat_`grade' ib(2).`grade'classtype whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' `grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,4] = _b[1.`grade'classtype]
+		matrix TableV`grade'[2,4] = _se[1.`grade'classtype]
+		matrix TableV`grade'[3,4] = _b[3.`grade'classtype]
+		matrix TableV`grade'[4,4] = _se[3.`grade'classtype]
+		matrix TableV`grade'[5,4] = _b[whiteasian]
+		matrix TableV`grade'[6,4] = _se[whiteasian]
+		matrix TableV`grade'[7,4] = _b[gender]
+		matrix TableV`grade'[8,4] = _se[gender]
+		matrix TableV`grade'[9,4] = _b[`grade'freelunch]
+		matrix TableV`grade'[10,4] = _se[`grade'freelunch]
+		matrix TableV`grade'[11,4] = _b[whiteteacher`grade']
+		matrix TableV`grade'[12,4] = _se[whiteteacher`grade']
+		matrix TableV`grade'[13,4] = _b[`grade'tyears]
+		matrix TableV`grade'[14,4] = _se[`grade'tyears]
+		matrix TableV`grade'[15,4] = _b[masterteacher`grade']
+		matrix TableV`grade'[16,4] = _se[masterteacher`grade']	
+		matrix TableV`grade'[17,4] = 1
+		matrix TableV`grade'[18,4] = e(r2)	
+	}
+	qui foreach grade of global grades{
+		reg pct_sat_`grade' ib(2).firstclasstype, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,5] = _b[1.firstclasstype]
+		matrix TableV`grade'[2,5] = _se[1.firstclasstype]
+		matrix TableV`grade'[3,5] = _b[3.firstclasstype]
+		matrix TableV`grade'[4,5] = _se[3.firstclasstype]
+		matrix TableV`grade'[17,5] = 0
+		matrix TableV`grade'[18,5] = e(r2)	
+	}
+	qui foreach grade of global grades{
+		reg pct_sat_`grade' ib(2).firstclasstype i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,6] = _b[1.firstclasstype]
+		matrix TableV`grade'[2,6] = _se[1.firstclasstype]
+		matrix TableV`grade'[3,6] = _b[3.firstclasstype]
+		matrix TableV`grade'[4,6] = _se[3.firstclasstype]
+		matrix TableV`grade'[17,6] = 1
+		matrix TableV`grade'[18,6] = e(r2)	
+	}
+	qui foreach grade of global grades{
+		reg pct_sat_`grade' ib(2).firstclasstype whiteasian gender `grade'freelunch i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,7] = _b[1.firstclasstype]
+		matrix TableV`grade'[2,7] = _se[1.firstclasstype]
+		matrix TableV`grade'[3,7] = _b[3.firstclasstype]
+		matrix TableV`grade'[4,7] = _se[3.firstclasstype]
+		matrix TableV`grade'[5,7] = _b[whiteasian]
+		matrix TableV`grade'[6,7] = _se[whiteasian]
+		matrix TableV`grade'[7,7] = _b[gender]
+		matrix TableV`grade'[8,7] = _se[gender]
+		matrix TableV`grade'[9,7] = _b[`grade'freelunch]
+		matrix TableV`grade'[10,7] = _se[`grade'freelunch]
+		matrix TableV`grade'[17,7] = 1
+		matrix TableV`grade'[18,7] = e(r2)	
+	}
+	qui foreach grade of global grades{
+		reg pct_sat_`grade' ib(2).firstclasstype whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' `grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,8] = _b[1.firstclasstype]
+		matrix TableV`grade'[2,8] = _se[1.firstclasstype]
+		matrix TableV`grade'[3,8] = _b[3.firstclasstype]
+		matrix TableV`grade'[4,8] = _se[3.firstclasstype]
+		matrix TableV`grade'[5,8] = _b[whiteasian]
+		matrix TableV`grade'[6,8] = _se[whiteasian]
+		matrix TableV`grade'[7,8] = _b[gender]
+		matrix TableV`grade'[8,8] = _se[gender]
+		matrix TableV`grade'[9,8] = _b[`grade'freelunch]
+		matrix TableV`grade'[10,8] = _se[`grade'freelunch]
+		matrix TableV`grade'[11,8] = _b[whiteteacher`grade']
+		matrix TableV`grade'[12,8] = _se[whiteteacher`grade']
+		matrix TableV`grade'[13,8] = _b[`grade'tyears]
+		matrix TableV`grade'[14,8] = _se[`grade'tyears]
+		matrix TableV`grade'[15,8] = _b[masterteacher`grade']
+		matrix TableV`grade'[16,8] = _se[masterteacher`grade']	
+		matrix TableV`grade'[17,8] = 1
+		matrix TableV`grade'[18,8] = e(r2)
+	}
+	
 
 *** Table I ***
 
 		foreach grade of global grades{		
-			*Todo: Write the correct entry in STAR
-
+			*Todo: Confirm that we have the correct entry in STAR
+			*Tip: Use "return list" to see available numbers
+				matrix TableI`grade' = J(6, 4, .)
+			
 			**Free Lunch**
-				reg `grade'freelunch ibn.`grade'classtype if flags`grade'==1, noconstant
+				reg `grade'freelunch ibn.`grade'classtype if gradeenter=="`grade'", noconstant
+				matrix TableI`grade'[1,1] = _b[1.`grade'classtype]
+				matrix TableI`grade'[1,2] = _b[2.`grade'classtype]
+				matrix TableI`grade'[1,3] = _b[3.`grade'classtype]
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-
+				matrix TableI`grade'[1,4] = r(p)
 			**White Asian**
-				reg whiteasian ibn.`grade'classtype if flags`grade'==1, noconstant
+				reg whiteasian ibn.`grade'classtype if gradeenter=="`grade'", noconstant
+				matrix TableI`grade'[2,1] = _b[1.`grade'classtype]
+				matrix TableI`grade'[2,2] = _b[2.`grade'classtype]
+				matrix TableI`grade'[2,3] = _b[3.`grade'classtype]
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+				matrix TableI`grade'[2,4] = r(p)
 
 			**Age in 1985**
-				reg age85 ibn.`grade'classtype if flags`grade'==1, noconstant
+				reg age85 ibn.`grade'classtype if gradeenter=="`grade'", noconstant
+				matrix TableI`grade'[3,1] = _b[1.`grade'classtype]
+				matrix TableI`grade'[3,2] = _b[2.`grade'classtype]
+				matrix TableI`grade'[3,3] = _b[3.`grade'classtype]
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+				matrix TableI`grade'[3,4] = r(p)
 
 			**Attrition**
-				reg attritions`grade' ibn.`grade'classtype if flags`grade'==1, noconstant
+				reg attritions`grade' ibn.`grade'classtype if gradeenter=="`grade'", noconstant
+				matrix TableI`grade'[4,1] = _b[1.`grade'classtype]
+				matrix TableI`grade'[4,2] = _b[2.`grade'classtype]
+				matrix TableI`grade'[4,3] = _b[3.`grade'classtype]
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+				matrix TableI`grade'[4,4] = r(p)
 
 			**Class Size**
-				reg `grade'classsize ibn.`grade'classtype if flags`grade'==1, noconstant
+				reg `grade'classsize ibn.`grade'classtype if gradeenter=="`grade'", noconstant
+				matrix TableI`grade'[5,1] = _b[1.`grade'classtype]
+				matrix TableI`grade'[5,2] = _b[2.`grade'classtype]
+				matrix TableI`grade'[5,3] = _b[3.`grade'classtype]
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+				matrix TableI`grade'[5,4] = r(p)
 
-			**Class Type**
-				reg pct_sat_`grade' ibn.`grade'classtype if flags`grade'==1, noconstant
+			**Percentile**
+				reg pct_sat_`grade' ibn.`grade'classtype if gradeenter=="`grade'", noconstant
+				matrix TableI`grade'[6,1] = _b[1.`grade'classtype]
+				matrix TableI`grade'[6,2] = _b[2.`grade'classtype]
+				matrix TableI`grade'[6,3] = _b[3.`grade'classtype]
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+				matrix TableI`grade'[6,4] = r(p)
 
 		}
 
 *** Density Graph ***
 	foreach grade of global grades{	
 		twoway kdensity pct_sat_`grade' if `grade'classtype == 1|| kdensity pct_sat_`grade' if `grade'classtype != 1, recast(line) lc(red)
+		*Todo: Activate this when labels are changed
+		*graph export density_pct_sat_`grade'.png
 		*kdensity pct_sat_`grade' if `grade'classtype == 1
 		*kdensity pct_sat_`grade' if `grade'classtype != 1
 	}
 	**Test**
 	*twoway kdensity pct_sat_gk if gkclasstype == 1|| kdensity pct_sat_gk if gkclasstype != 1, recast(line) lc(red)
 	*twoway kdensity pct_sat_g1 if g1classtype == 1|| kdensity pct_sat_g1 if g1classtype != 1, recast(line) lc(red)
-	twoway kdensity pct_sat_g2 if g2classtype == 1|| kdensity pct_sat_g2 if g2classtype != 1, recast(line) lc(red)
+	*twoway kdensity pct_sat_g2 if g2classtype == 1|| kdensity pct_sat_g2 if g2classtype != 1, recast(line) lc(red)
 	*twoway kdensity pct_sat_g3 if g3classtype == 1|| kdensity pct_sat_g3 if g3classtype != 1, recast(line) lc(red)
+	
+*** Table II ***
+	foreach grade of global grades{	
+		*Todo: Fix this, numbers don't match for free lunch. Maybe it is out of order
+		qui reg pct_sat_`grade' ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
+		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+		display r(p)
+		qui reg `grade'freelunch ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
+		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+		display r(p)
+		qui reg whiteasian ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
+		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+		display r(p)
+		qui reg age85 ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
+		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+		display r(p)
+		qui reg attritions`grade' ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
+		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+		display r(p)
+		qui reg `grade'classsize ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
+		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+		display r(p)
+		qui reg pct_sat_`grade' ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
+		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
+		display r(p)
+	}
 	
 *** Table III ***
 	*Todo: Check replace gkclasstype=1 if gkclasstype==.
@@ -274,13 +474,18 @@
 		*weakivtest
 	}		
 
-*** Notes ***
+*** Display Results ***
 
-	*2 Different methods were tried to calculate the percentiles.
-	*We kept the one that is closer to the paper.
-	*Original: 54.7 and 49.9 with beta 4.82 and 5.37
-	*Regular1: 52.98 and 48.54 with beta 4.41 and 4.97
-	*Regular2: 52.90 and 48.54 with beta 4.35 and 4.83
+**Display Table I**
+matrix list TableIgk
+matrix list TableIg1
+matrix list TableIg2
+matrix list TableIg3
 
+**Display Table V**
+matrix list TableVgk
+matrix list TableVg1
+matrix list TableVg2
+matrix list TableVg3
 
-
+	
