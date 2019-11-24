@@ -8,7 +8,9 @@
 	* At the end I calculated the average of the percentiles obtained with the two methods.
 	* It is easy to change it to have just one or the other method. See "Method Choice" comment below.
 	* Because recalculating for every individual is computationally intensive, expect 5 to 10 minutes to have all the percentiles calculated.
-
+	* We chose to save the tables as a .txt delimited by space. 
+	* If there are already .txt files with the same names the tables will be added to the existing files instead of overwriting. See comments below.
+	
 *** Setting Directory ***
 	global dir = "C:\GitHub\"
 	cd "$dir"
@@ -249,6 +251,8 @@
 	qui replace small=1 if regular==0
 	qui foreach grade of global grades{
 		matrix TableV`grade' = J(18, 8, .)
+		matrix colnames TableV`grade' = "(1)" "(2)" "(3)" "(4)" "(5)" "(6)" "(7)" "(8)"
+		matrix rownames TableV`grade' = "Small Class" "." "Regular/aide class" "." "White/Asian" "." "Female" "." "Free Lunch" "." "White Teacher" "." "Teacher Experience" "." "Master's Degree" "." "School Fixed Effects" "R-Squared"
 		sum pct_sat_`grade' if small == 1
 		sum pct_sat_`grade' if regular == 1
 	}
@@ -368,7 +372,9 @@
 			*Todo: Confirm that we have the correct entry in STAR
 			*Tip: Use "return list" to see available numbers
 				matrix TableI`grade' = J(6, 4, .)
-			
+				matrix colnames TableI`grade' = "Small" "Regular" "Regular/Aide" "Joint P-Value"
+				matrix rownames TableI`grade' = "Free Lunch" "White/Asian" "Age in 1985" "Attrition" "Class Size" "Percentile Score" 
+		
 			**Free Lunch**
 				reg `grade'freelunch ibn.`grade'classtype if gradeenter=="`grade'", noconstant
 				matrix TableI`grade'[1,1] = _b[1.`grade'classtype]
@@ -421,12 +427,14 @@
 *** Density Graph ***
 	qui foreach grade of global grades{	
 		twoway kdensity pct_sat_`grade' if `grade'classtype == 1|| kdensity pct_sat_`grade' if `grade'classtype != 1, recast(line) lc(red)
-		*Todo: Find a way to change the labels are changed
+		*Todo: Find a way to change the labels
 		graph export density_pct_sat_`grade'.png
 	}
 	
 *** Table II ***
 	qui matrix TableII = J(6, 4, .)
+	matrix colnames TableII = "K" "1" "2" "3"
+	matrix rownames TableII = "Free Lunch" "White/Asian" "Age" "Attrition" "Actual Class Size" "Percentile Score" 	
 	qui gen n = 1
 	qui foreach grade of global grades{	
 		qui reg `grade'freelunch ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
@@ -456,26 +464,29 @@
 	*Todo: Check if we need to replace gkclasstype=1 if gkclasstype==.
 	*Todo: Check if we are replacing correcly replace
 	*Todo: Test for grade entered
-	qui matrix TableIII = J(20, 4, .)
+	qui matrix TableIII = J(20, 3, .)
+	qui matrix colnames TableIII = "Small" "Regular" "Aide"
+	qui matrix rowname TableIII = "12" "13" "14" "15" "16" "17" "18" "19" "20" "21" "22" "23" "24" "25" "26" "27" "28" "29" "30" "Average Class Size"
 	qui forvalues i = 12(1)30{
-		matrix TableIII[`i'-11,1] = `i'
 		sum g1classtype if g1classsize == `i' & g1classtype == 1
-		matrix TableIII[`i'-11,2] = r(N)
+		matrix TableIII[`i'-11,1] = r(N)
 		sum g1classtype if g1classsize == `i' & g1classtype == 2
-		matrix TableIII[`i'-11,3] = r(N)
+		matrix TableIII[`i'-11,2] = r(N)
 		sum g1classtype if g1classsize == `i' & g1classtype == 3
-		matrix TableIII[`i'-11,4] = r(N)
+		matrix TableIII[`i'-11,3] = r(N)
 	}
 	qui sum g1classsize if g1classtype == 1
-	qui matrix TableIII[20,2] = r(mean)
+	qui matrix TableIII[20,1] = r(mean)
 	qui sum g1classsize if g1classtype == 2
-	qui matrix TableIII[20,3] = r(mean)
+	qui matrix TableIII[20,2] = r(mean)
 	qui sum g1classsize if g1classtype == 3
-	qui matrix TableIII[20,4] = r(mean)
+	qui matrix TableIII[20,3] = r(mean)
 	
  
 *** Table VII ***
 	qui matrix TableVII = J(8, 3, .)
+	matrix colnames TableVII = "OLS" "2SLS" "Sample Size"
+	matrix rownames TableVII = "K" "." "1" "." "2" "." "3" "."
 	qui gen n = 1
 	qui foreach grade of global grades{
 		*Todo: Add the weakivtest here if possible
@@ -491,33 +502,40 @@
 	}
 	qui drop n
 
-*** Save Results to Excel***	
-	
+*** Save Results as txt***	
+	*Note: If there are already .txt files with the same names the tables will be added to the existing files instead of overwriting. That's the option "append" below
 	qui global Tables TableIgk TableIg1 TableIg2 TableIg3 TableII TableIII TableVgk TableVg1 TableVg2 TableVg3 TableVII
 	foreach table of global Tables{
 		mat2txt, matrix(`table') saving(`table') append
 	}
 	
 *** Display Results ***
-
+	
 	**Display Table I**
-	matrix list TableIgk
-	matrix list TableIg1
-	matrix list TableIg2
-	matrix list TableIg3
+		*Kindergarten*
+		matrix list TableIgk
+		*First Grade*
+		matrix list TableIg1
+		*Second Grade*
+		matrix list TableIg2
+		*Third Grade*
+		matrix list TableIg3
 
 	**Display Table II**
-	matrix list TableII
+		matrix list TableII
 
 	**Display Table III**
-	matrix list TableIII
+		matrix list TableIII
 
 	**Display Table V**
-	matrix list TableVgk
-	matrix list TableVg1
-	matrix list TableVg2
-	matrix list TableVg3
-
-	**Display Table VII**
-	matrix list TableVII
-	
+		*Kindergarten*
+		matrix list TableVgk
+		*First Grade*
+		matrix list TableVg1
+		*Second Grade*
+		matrix list TableVg2
+		*Third Grade*
+		matrix list TableVg3
+		**Display Table VII**
+		matrix list TableVII
+		
