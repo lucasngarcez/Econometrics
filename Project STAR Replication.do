@@ -20,50 +20,51 @@
 	*ssc install weakivtest
 	*ssc install avar
 	*ssc install ranktest
+	*ssc install mat2txt
 
 *** Creating Variables ***
 	
 	** Open data **
 		clear
-		use "C:\GitHub\STAR_Students.dta", clear
+		qui use "C:\GitHub\STAR_Students.dta", clear
 
 	**Grades**
-		global grades gk g1 g2 g3
+		qui global grades gk g1 g2 g3
 		*Todo: Check if it has to be global
 
 	** Free Lunch **
-		foreach grade of global grades{
+		qui foreach grade of global grades{
 			replace `grade'freelunch=1 if `grade'freelunch==1
 			replace `grade'freelunch=0 if `grade'freelunch==2
 			label variable `grade'freelunch "FREE/REDUCED LUNCH STATUS. 1 IF LUNCH IS FREE"
 		}
 		
 	** White and Asian **
-		gen whiteasian = 1 if race == 1 | race == 3
-		replace whiteasian = 0 if whiteasian != 1
-		label variable whiteasian "1 IF CHILD IS WHITE OR ASIAN"
+		qui gen whiteasian = 1 if race == 1 | race == 3
+		qui replace whiteasian = 0 if whiteasian != 1
+		qui label variable whiteasian "1 IF CHILD IS WHITE OR ASIAN"
 		
 	** Transform Gender into Dummy **
-		replace gender = 0 if gender == 1
-		replace gender = 1 if gender == 2
-		label variable gender "STUDENT GENDER. 1 IF FEMALE"
+		qui replace gender = 0 if gender == 1
+		qui replace gender = 1 if gender == 2
+		qui label variable gender "STUDENT GENDER. 1 IF FEMALE"
 		
 	**Master Teacher**
-		foreach grade of global grades{
+		qui foreach grade of global grades{
 			gen masterteacher`grade' = 1 if `grade'thighdegree == 3 | `grade'thighdegree == 4 | `grade'thighdegree == 5 | `grade'thighdegree == 6
 			replace masterteacher`grade' = 0 if masterteacher`grade' != 1
 			label variable masterteacher`grade' "TEACHERS WITH MASTERS DEGREE OR MORE. 1 IF MASTERS OR MORE"
 		}	
 		
 	**White Teacher**
-		foreach grade of global grades{
+		qui foreach grade of global grades{
 			gen whiteteacher`grade' = 1 if `grade'trace == 1
 			replace whiteteacher`grade' = 0 if whiteteacher`grade' != 1
 			label variable whiteteacher`grade' "WHITE TEACHER. 0 IF NON-WHITE"
 		}
 		
 	**Transform Teacher Gender into Dummy**
-		foreach grade of global grades{
+		qui foreach grade of global grades{
 			replace `grade'tgen = 0 if gender == 1
 			replace `grade'tgen = 1 if gender == 2
 			label variable `grade'tgen "TEACHER GENDER. 1 IF FEMALE"
@@ -71,14 +72,14 @@
 
 
 	** Attrition **
-		gen attritionsgk = 0 if flagsgk == 1 & flagsg1 == 1 & flagsg2 == 1 & flagsg3 == 1
-		gen attritionsg1 = 0 if flagsg1 == 1 & flagsg2 == 1 & flagsg3 == 1
-		gen attritionsg2 = 0 if flagsg2 == 1 & flagsg3 == 1
-		gen attritionsg3 = 0
-		replace attritionsgk = 1 if attritionsgk != 0
-		replace attritionsg1 = 1 if attritionsg1 != 0
-		replace attritionsg2 = 1 if attritionsg2 != 0
-		foreach grade of global grades{
+		qui gen attritionsgk = 0 if flagsgk == 1 & flagsg1 == 1 & flagsg2 == 1 & flagsg3 == 1
+		qui gen attritionsg1 = 0 if flagsg1 == 1 & flagsg2 == 1 & flagsg3 == 1
+		qui gen attritionsg2 = 0 if flagsg2 == 1 & flagsg3 == 1
+		qui gen attritionsg3 = 0
+		qui replace attritionsgk = 1 if attritionsgk != 0
+		qui replace attritionsg1 = 1 if attritionsg1 != 0
+		qui replace attritionsg2 = 1 if attritionsg2 != 0
+		qui foreach grade of global grades{
 			label variable attritions`grade' "ATTRITION. 1 IF LEFT THE PROGRAM"
 		}
 		*Todo: This is replacing missing values. Check if it affects results.
@@ -86,23 +87,23 @@
 	** Age **
 
 		*Age reference is Sep. 30, 1985
-		gen age85=(714900-((birthyear*12*30)+(birthmonth*30)+birthday))
-		replace age85=age85/365
-		label variable age85 "APPROX. STUDENT AGE IN 1985"
+		qui gen age85=(714900-((birthyear*12*30)+(birthmonth*30)+birthday))
+		qui replace age85=age85/365
+		qui label variable age85 "APPROX. STUDENT AGE IN 1985"
 		*gen age85=mdy(birthmonth,birthday,birthyear)
 		*replace age85=mdy(9,1,1985)-age85
 
 	**Regular Class Size Dummy**
 
-		gen regular=1 if gkclasssize < 28 & gkclasssize > 17
-		label variable regular "REGULAR SIZE CLASS. 1 IF REGULAR"
+		qui gen regular=1 if gkclasssize < 28 & gkclasssize > 17
+		qui label variable regular "REGULAR SIZE CLASS. 1 IF REGULAR"
 		*replace regular=0 if regular != 1 
 		*gen regular=1 if gkclasstype == 2
 		*replace regular=1 if gkclasstype == 3
 
 	**Percentile SAT Method (1)**
 
-		foreach grade of global grades{ 
+		qui foreach grade of global grades{ 
 			**Percentile Reading SAT**
 				gen temp = 0
 				gen pct_reading = .
@@ -195,7 +196,7 @@
 	
 	**Percentile SAT Method (2)**
 
-	foreach grade of global grades{
+	qui foreach grade of global grades{
 		foreach sub in tread tmath wordskill {
 			cumul `grade'`sub'ss if inrange(gkclasstype,2,3), gen(`grade'`sub'xt)
 			sort `grade'`sub'ss
@@ -208,39 +209,39 @@
 		qui replace `grade'SATxt=100*`grade'SATxt	
 	}
 	** Method Choice: Edit here if you want just method (1) or just method (2)
- 		egen temp = rmean(gkSATxt pct_sat_gk)
-		replace pct_sat_gk = temp
-		drop temp
-		label variable pct_sat_gk "AVERAGE SAT PERCENTILE IN KINDERGARTEN"
-		 egen temp = rmean(g1SATxt pct_sat_g1)
-		replace pct_sat_g1 = temp
-		drop temp
-		label variable pct_sat_g1 "AVERAGE SAT PERCENTILE IN GRADE 1"
-	 	egen temp = rmean(g2SATxt pct_sat_g2)
-		replace pct_sat_g2 = temp
-		drop temp
-		label variable pct_sat_g2 "AVERAGE SAT PERCENTILE IN GRADE 2"
-	 	egen temp = rmean(g3SATxt pct_sat_g3)
-		replace pct_sat_g3 = temp
-		drop temp
-		label variable pct_sat_g3 "AVERAGE SAT PERCENTILE IN GRADE 3"
+ 		qui egen temp = rmean(gkSATxt pct_sat_gk)
+		qui replace pct_sat_gk = temp
+		qui drop temp
+		qui label variable pct_sat_gk "AVERAGE SAT PERCENTILE IN KINDERGARTEN"
+		qui egen temp = rmean(g1SATxt pct_sat_g1)
+		qui replace pct_sat_g1 = temp
+		qui drop temp
+		qui label variable pct_sat_g1 "AVERAGE SAT PERCENTILE IN GRADE 1"
+	 	qui egen temp = rmean(g2SATxt pct_sat_g2)
+		qui replace pct_sat_g2 = temp
+		qui drop temp
+		qui label variable pct_sat_g2 "AVERAGE SAT PERCENTILE IN GRADE 2"
+	 	qui egen temp = rmean(g3SATxt pct_sat_g3)
+		qui replace pct_sat_g3 = temp
+		qui drop temp
+		qui label variable pct_sat_g3 "AVERAGE SAT PERCENTILE IN GRADE 3"
 	
 	**Grade Entered Star**
 
-		gen gradeenter=""
-		replace gradeenter="gk" if flagsgk==1
-		replace gradeenter="g1" if flagsgk==0 & flagsg1==1 
-		replace gradeenter="g2" if flagsgk==0 & flagsg1==0 & flagsg2==1
-		replace gradeenter="g3" if flagsgk==0 & flagsg1==0 & flagsg2==0 & flagsg3==1
-		label variable gradeenter "GRADE WHEN ENTERED STAR"
+		qui gen gradeenter=""
+		qui replace gradeenter="gk" if flagsgk==1
+		qui replace gradeenter="g1" if flagsgk==0 & flagsg1==1 
+		qui replace gradeenter="g2" if flagsgk==0 & flagsg1==0 & flagsg2==1
+		qui replace gradeenter="g3" if flagsgk==0 & flagsg1==0 & flagsg2==0 & flagsg3==1
+		qui label variable gradeenter "GRADE WHEN ENTERED STAR"
 
 	**Class Assignment in First Year**
-		gen firstclasstype = .
-		foreach grade of global grades{
+		qui gen firstclasstype = .
+		qui foreach grade of global grades{
 			set varabbrev off
 			replace firstclasstype = `grade'classtype if gradeenter == "`grade'"
 		}
-		label variable firstclasstype "CLASS ASSIGNMENT WHEN ENTERED STAR"
+		qui label variable firstclasstype "CLASS ASSIGNMENT WHEN ENTERED STAR"
 
 *** Table V ***
 	qui replace regular=0 if regular != 1
@@ -363,7 +364,7 @@
 
 *** Table I ***
 
-		foreach grade of global grades{		
+		qui foreach grade of global grades{		
 			*Todo: Confirm that we have the correct entry in STAR
 			*Tip: Use "return list" to see available numbers
 				matrix TableI`grade' = J(6, 4, .)
@@ -418,74 +419,105 @@
 		}
 
 *** Density Graph ***
-	foreach grade of global grades{	
+	qui foreach grade of global grades{	
 		twoway kdensity pct_sat_`grade' if `grade'classtype == 1|| kdensity pct_sat_`grade' if `grade'classtype != 1, recast(line) lc(red)
-		*Todo: Activate this when labels are changed
-		*graph export density_pct_sat_`grade'.png
-		*kdensity pct_sat_`grade' if `grade'classtype == 1
-		*kdensity pct_sat_`grade' if `grade'classtype != 1
+		*Todo: Find a way to change the labels are changed
+		graph export density_pct_sat_`grade'.png
 	}
-	**Test**
-	*twoway kdensity pct_sat_gk if gkclasstype == 1|| kdensity pct_sat_gk if gkclasstype != 1, recast(line) lc(red)
-	*twoway kdensity pct_sat_g1 if g1classtype == 1|| kdensity pct_sat_g1 if g1classtype != 1, recast(line) lc(red)
-	*twoway kdensity pct_sat_g2 if g2classtype == 1|| kdensity pct_sat_g2 if g2classtype != 1, recast(line) lc(red)
-	*twoway kdensity pct_sat_g3 if g3classtype == 1|| kdensity pct_sat_g3 if g3classtype != 1, recast(line) lc(red)
 	
 *** Table II ***
-	foreach grade of global grades{	
-		*Todo: Fix this, numbers don't match for free lunch. Maybe it is out of order
-		qui reg pct_sat_`grade' ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
-		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		display r(p)
+	qui matrix TableII = J(6, 4, .)
+	qui gen n = 1
+	qui foreach grade of global grades{	
 		qui reg `grade'freelunch ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		display r(p)
+		matrix TableII[1,n] = r(p)
 		qui reg whiteasian ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		display r(p)
+		matrix TableII[2,n] = r(p)
 		qui reg age85 ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		display r(p)
+		matrix TableII[3,n] = r(p)
 		qui reg attritions`grade' ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		display r(p)
+		matrix TableII[4,n] = r(p)
 		qui reg `grade'classsize ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		display r(p)
+		matrix TableII[5,n] = r(p)
 		qui reg pct_sat_`grade' ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		display r(p)
+		matrix TableII[6,n] = r(p)
+		replace n = n+1
 	}
+	qui drop n
+	
 	
 *** Table III ***
-	*Todo: Check replace gkclasstype=1 if gkclasstype==.
-	*Todo: Check how to correcly replace
+	*Todo: Check if we need to replace gkclasstype=1 if gkclasstype==.
+	*Todo: Check if we are replacing correcly replace
 	*Todo: Test for grade entered
-	tab g1classsize g1classtype
-	mean g1classsize if g1classtype == 1
-	mean g1classsize if g1classtype == 2
-	mean g1classsize if g1classtype == 3
-
-*** Table VII ***
+	qui matrix TableIII = J(20, 4, .)
+	qui forvalues i = 12(1)30{
+		matrix TableIII[`i'-11,1] = `i'
+		sum g1classtype if g1classsize == `i' & g1classtype == 1
+		matrix TableIII[`i'-11,2] = r(N)
+		sum g1classtype if g1classsize == `i' & g1classtype == 2
+		matrix TableIII[`i'-11,3] = r(N)
+		sum g1classtype if g1classsize == `i' & g1classtype == 3
+		matrix TableIII[`i'-11,4] = r(N)
+	}
+	qui sum g1classsize if g1classtype == 1
+	qui matrix TableIII[20,2] = r(mean)
+	qui sum g1classsize if g1classtype == 2
+	qui matrix TableIII[20,3] = r(mean)
+	qui sum g1classsize if g1classtype == 3
+	qui matrix TableIII[20,4] = r(mean)
 	
-	foreach grade of global grades{	
+ 
+*** Table VII ***
+	qui matrix TableVII = J(8, 3, .)
+	qui gen n = 1
+	qui foreach grade of global grades{
+		*Todo: Add the weakivtest here if possible
 		reg pct_sat_`grade' `grade'classsize whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableVII[n,1] = _b[`grade'classsize]
+		matrix TableVII[n+1,1] = _se[`grade'classsize]
 		ivregress 2sls pct_sat_`grade' (`grade'classsize = i.`grade'classtype) whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableVII[n,2] = _b[`grade'classsize]
+		matrix TableVII[n+1,2] = _se[`grade'classsize]
+		matrix TableVII[n,3] = e(N)
+		replace n = n+2
 		*weakivtest
-	}		
+	}
+	qui drop n
 
+*** Save Results to Excel***	
+	
+	qui global Tables TableIgk TableIg1 TableIg2 TableIg3 TableII TableIII TableVgk TableVg1 TableVg2 TableVg3 TableVII
+	foreach table of global Tables{
+		mat2txt, matrix(`table') saving(`table') append
+	}
+	
 *** Display Results ***
 
-**Display Table I**
-matrix list TableIgk
-matrix list TableIg1
-matrix list TableIg2
-matrix list TableIg3
+	**Display Table I**
+	matrix list TableIgk
+	matrix list TableIg1
+	matrix list TableIg2
+	matrix list TableIg3
 
-**Display Table V**
-matrix list TableVgk
-matrix list TableVg1
-matrix list TableVg2
-matrix list TableVg3
+	**Display Table II**
+	matrix list TableII
 
+	**Display Table III**
+	matrix list TableIII
+
+	**Display Table V**
+	matrix list TableVgk
+	matrix list TableVg1
+	matrix list TableVg2
+	matrix list TableVg3
+
+	**Display Table VII**
+	matrix list TableVII
 	
