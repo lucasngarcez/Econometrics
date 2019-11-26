@@ -1,7 +1,7 @@
 	K	1	2	3	
-Free Lunch	 .44587462	  .2922815	 .57873431	 .18381914	
-White/Asian	 .65955419	 .28200911	 .18345427	 .26621871	
-Age	 .42083851	 .12028708	 .42603446	 .47918358	
-Attrition	 .01172121	 .37000831	 .84830378	         .	
+Free Lunch	       .45	       .29	       .58	       .18	
+White/Asian	       .66	       .28	       .18	       .27	
+Age	       .42	       .12	       .43	       .48	
+Attrition	       .01	       .37	       .85	         .	
 Actual Class Size	         0	         0	         0	         0	
-Percentile Score	 9.142e-14	 .00004233	  .5840529	 .00433581	
+Percentile Score	         0	         0	       .58	         0	

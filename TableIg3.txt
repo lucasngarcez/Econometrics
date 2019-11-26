@@ -1,7 +1,7 @@
 	Small	Regular	Regular/Aide	Joint P-Value	
-Free Lunch	 .59831461	 .64454976	 .68632075	 .03771741	
-White/Asian	 .65951743	 .57488987	  .5504386	 .00439566	
-Age in 1985	  5.943472	  5.921406	 5.9766325	 .50011813	
+Free Lunch	        .6	       .64	       .69	       .04	
+White/Asian	       .66	       .57	       .55	         0	
+Age in 1985	      5.94	      5.92	      5.98	        .5	
 Attrition	         0	         0	         0	         .	
-Class Size	 15.970509	 24.050661	 24.425439	         0	
-Percentile Score	 39.837804	 36.331687	 33.853524	 .00709826	
+Class Size	     15.97	     24.05	     24.43	         0	
+Percentile Score	     39.84	     36.33	     33.85	       .01	

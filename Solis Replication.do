@@ -1,5 +1,5 @@
 *** Lucas Garcez - Replication ***
-
+	clear
 *** Notes ***
 
 	* 2 Different methods were tried to calculate the percentiles.
@@ -65,11 +65,11 @@
 			label variable whiteteacher`grade' "WHITE TEACHER. 0 IF NON-WHITE"
 		}
 		
+		
 	**Transform Teacher Gender into Dummy**
 		qui foreach grade of global grades{
-			replace `grade'tgen = 0 if gender == 1
-			replace `grade'tgen = 1 if gender == 2
-			label variable `grade'tgen "TEACHER GENDER. 1 IF FEMALE"
+			replace `grade'tgen = 0 if `grade'tgen == 2
+			label variable `grade'tgen "TEACHER GENDER. 1 IF MALE"
 		}
 
 
@@ -250,119 +250,123 @@
 	qui gen small=0
 	qui replace small=1 if regular==0
 	qui foreach grade of global grades{
-		matrix TableV`grade' = J(18, 8, .)
+		matrix TableV`grade' = J(20, 8, .)
 		matrix colnames TableV`grade' = "(1)" "(2)" "(3)" "(4)" "(5)" "(6)" "(7)" "(8)"
-		matrix rownames TableV`grade' = "Small Class" "." "Regular/aide class" "." "White/Asian" "." "Female" "." "Free Lunch" "." "White Teacher" "." "Teacher Experience" "." "Master's Degree" "." "School Fixed Effects" "R-Squared"
+		matrix rownames TableV`grade' = "Small Class" "." "Regular/aide class" "." "White/Asian" "." "Female" "." "Free Lunch" "." "White Teacher" "." "Male Teacher" "." "Teacher Experience" "." "Master's Degree" "." "School Fixed Effects" "R-Squared"
 		sum pct_sat_`grade' if small == 1
 		sum pct_sat_`grade' if regular == 1
 	}
 	qui foreach grade of global grades{
 		reg pct_sat_`grade' ib(2).`grade'classtype, vce(cluster `grade'tchid)
-		matrix TableV`grade'[1,1] = _b[1.`grade'classtype]
-		matrix TableV`grade'[2,1] = _se[1.`grade'classtype]
-		matrix TableV`grade'[3,1] = _b[3.`grade'classtype]
-		matrix TableV`grade'[4,1] = _se[3.`grade'classtype]
-		matrix TableV`grade'[17,1] = 0
-		matrix TableV`grade'[18,1] = e(r2)
+		matrix TableV`grade'[1,1] = round(_b[1.`grade'classtype],.01)
+		matrix TableV`grade'[2,1] = round(_se[1.`grade'classtype],.01)
+		matrix TableV`grade'[3,1] = round(_b[3.`grade'classtype],.01)
+		matrix TableV`grade'[4,1] = round(_se[3.`grade'classtype],.01)
+		matrix TableV`grade'[19,1] = round(0,.01)
+		matrix TableV`grade'[20,1] = round(e(r2),.01)
 	}
 	qui foreach grade of global grades{
 		reg pct_sat_`grade' ib(2).`grade'classtype i.`grade'schid, vce(cluster `grade'tchid)
-		matrix TableV`grade'[1,2] = _b[1.`grade'classtype]
-		matrix TableV`grade'[2,2] = _se[1.`grade'classtype]
-		matrix TableV`grade'[3,2] = _b[3.`grade'classtype]
-		matrix TableV`grade'[4,2] = _se[3.`grade'classtype]
-		matrix TableV`grade'[17,2] = 1
-		matrix TableV`grade'[18,2] = e(r2)
+		matrix TableV`grade'[1,2] = round(_b[1.`grade'classtype],.01)
+		matrix TableV`grade'[2,2] = round(_se[1.`grade'classtype],.01)
+		matrix TableV`grade'[3,2] = round(_b[3.`grade'classtype],.01)
+		matrix TableV`grade'[4,2] = round(_se[3.`grade'classtype],.01)
+		matrix TableV`grade'[19,2] = round(1,.01)
+		matrix TableV`grade'[20,2] = round(e(r2),.01)
 	}	
 	qui foreach grade of global grades{
 		reg pct_sat_`grade' ib(2).`grade'classtype whiteasian gender `grade'freelunch i.`grade'schid, vce(cluster `grade'tchid)
-		matrix TableV`grade'[1,3] = _b[1.`grade'classtype]
-		matrix TableV`grade'[2,3] = _se[1.`grade'classtype]
-		matrix TableV`grade'[3,3] = _b[3.`grade'classtype]
-		matrix TableV`grade'[4,3] = _se[3.`grade'classtype]
-		matrix TableV`grade'[5,3] = _b[whiteasian]
-		matrix TableV`grade'[6,3] = _se[whiteasian]
-		matrix TableV`grade'[7,3] = _b[gender]
-		matrix TableV`grade'[8,3] = _se[gender]
-		matrix TableV`grade'[9,3] = _b[`grade'freelunch]
-		matrix TableV`grade'[10,3] = _se[`grade'freelunch]
-		matrix TableV`grade'[17,3] = 1
-		matrix TableV`grade'[18,3] = e(r2)	
+		matrix TableV`grade'[1,3] = round(_b[1.`grade'classtype],.01)
+		matrix TableV`grade'[2,3] = round(_se[1.`grade'classtype],.01)
+		matrix TableV`grade'[3,3] = round(_b[3.`grade'classtype],.01)
+		matrix TableV`grade'[4,3] = round(_se[3.`grade'classtype],.01)
+		matrix TableV`grade'[5,3] = round(_b[whiteasian],.01)
+		matrix TableV`grade'[6,3] = round(_se[whiteasian],.01)
+		matrix TableV`grade'[7,3] = round(_b[gender],.01)
+		matrix TableV`grade'[8,3] = round(_se[gender],.01)
+		matrix TableV`grade'[9,3] = round(_b[`grade'freelunch],.01)
+		matrix TableV`grade'[10,3] = round(_se[`grade'freelunch],.01)
+		matrix TableV`grade'[19,3] = round(1,.01)
+		matrix TableV`grade'[20,3] = round(e(r2),.01)
 	}
 	qui foreach grade of global grades{
-		reg pct_sat_`grade' ib(2).`grade'classtype whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' `grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
-		matrix TableV`grade'[1,4] = _b[1.`grade'classtype]
-		matrix TableV`grade'[2,4] = _se[1.`grade'classtype]
-		matrix TableV`grade'[3,4] = _b[3.`grade'classtype]
-		matrix TableV`grade'[4,4] = _se[3.`grade'classtype]
-		matrix TableV`grade'[5,4] = _b[whiteasian]
-		matrix TableV`grade'[6,4] = _se[whiteasian]
-		matrix TableV`grade'[7,4] = _b[gender]
-		matrix TableV`grade'[8,4] = _se[gender]
-		matrix TableV`grade'[9,4] = _b[`grade'freelunch]
-		matrix TableV`grade'[10,4] = _se[`grade'freelunch]
-		matrix TableV`grade'[11,4] = _b[whiteteacher`grade']
-		matrix TableV`grade'[12,4] = _se[whiteteacher`grade']
-		matrix TableV`grade'[13,4] = _b[`grade'tyears]
-		matrix TableV`grade'[14,4] = _se[`grade'tyears]
-		matrix TableV`grade'[15,4] = _b[masterteacher`grade']
-		matrix TableV`grade'[16,4] = _se[masterteacher`grade']	
-		matrix TableV`grade'[17,4] = 1
-		matrix TableV`grade'[18,4] = e(r2)	
+		reg pct_sat_`grade' ib(2).`grade'classtype whiteasian gender `grade'freelunch whiteteacher`grade' `grade'tgen `grade'tyears masterteacher`grade' i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,4] = round(_b[1.`grade'classtype],.01)
+		matrix TableV`grade'[2,4] = round(_se[1.`grade'classtype],.01)
+		matrix TableV`grade'[3,4] = round(_b[3.`grade'classtype],.01)
+		matrix TableV`grade'[4,4] = round(_se[3.`grade'classtype],.01)
+		matrix TableV`grade'[5,4] = round(_b[whiteasian],.01)
+		matrix TableV`grade'[6,4] = round(_se[whiteasian],.01)
+		matrix TableV`grade'[7,4] = round(_b[gender],.01)
+		matrix TableV`grade'[8,4] = round(_se[gender],.01)
+		matrix TableV`grade'[9,4] = round(_b[`grade'freelunch],.01)
+		matrix TableV`grade'[10,4] = round(_se[`grade'freelunch],.01)
+		matrix TableV`grade'[11,4] = round(_b[whiteteacher`grade'],.01)
+		matrix TableV`grade'[12,4] = round(_se[whiteteacher`grade'],.01)		
+		matrix TableV`grade'[13,4] = round(_b[`grade'tgen],.01)
+		matrix TableV`grade'[14,4] = round(_se[`grade'tgen],.01)
+		matrix TableV`grade'[15,4] = round(_b[`grade'tyears],.01)
+		matrix TableV`grade'[16,4] = round(_se[`grade'tyears],.01)
+		matrix TableV`grade'[17,4] = round(_b[masterteacher`grade'],.01)
+		matrix TableV`grade'[18,4] = round(_se[masterteacher`grade'],.01)
+		matrix TableV`grade'[19,4] = round(1,.01)
+		matrix TableV`grade'[20,4] = round(e(r2),.01)
 	}
 	qui foreach grade of global grades{
 		reg pct_sat_`grade' ib(2).firstclasstype, vce(cluster `grade'tchid)
-		matrix TableV`grade'[1,5] = _b[1.firstclasstype]
-		matrix TableV`grade'[2,5] = _se[1.firstclasstype]
-		matrix TableV`grade'[3,5] = _b[3.firstclasstype]
-		matrix TableV`grade'[4,5] = _se[3.firstclasstype]
-		matrix TableV`grade'[17,5] = 0
-		matrix TableV`grade'[18,5] = e(r2)	
+		matrix TableV`grade'[1,5] = round(_b[1.firstclasstype],.01)
+		matrix TableV`grade'[2,5] = round(_se[1.firstclasstype],.01)
+		matrix TableV`grade'[3,5] = round(_b[3.firstclasstype],.01)
+		matrix TableV`grade'[4,5] = round(_se[3.firstclasstype],.01)
+		matrix TableV`grade'[19,5] = round(0,.01)
+		matrix TableV`grade'[20,5] = round(e(r2),.01)
 	}
 	qui foreach grade of global grades{
 		reg pct_sat_`grade' ib(2).firstclasstype i.`grade'schid, vce(cluster `grade'tchid)
-		matrix TableV`grade'[1,6] = _b[1.firstclasstype]
-		matrix TableV`grade'[2,6] = _se[1.firstclasstype]
-		matrix TableV`grade'[3,6] = _b[3.firstclasstype]
-		matrix TableV`grade'[4,6] = _se[3.firstclasstype]
-		matrix TableV`grade'[17,6] = 1
-		matrix TableV`grade'[18,6] = e(r2)	
+		matrix TableV`grade'[1,6] = round(_b[1.firstclasstype],.01)
+		matrix TableV`grade'[2,6] = round(_se[1.firstclasstype],.01)
+		matrix TableV`grade'[3,6] = round(_b[3.firstclasstype],.01)
+		matrix TableV`grade'[4,6] = round(_se[3.firstclasstype],.01)
+		matrix TableV`grade'[19,6] = round(1,.01)
+		matrix TableV`grade'[20,6] = round(e(r2),.01)
 	}
 	qui foreach grade of global grades{
 		reg pct_sat_`grade' ib(2).firstclasstype whiteasian gender `grade'freelunch i.`grade'schid, vce(cluster `grade'tchid)
-		matrix TableV`grade'[1,7] = _b[1.firstclasstype]
-		matrix TableV`grade'[2,7] = _se[1.firstclasstype]
-		matrix TableV`grade'[3,7] = _b[3.firstclasstype]
-		matrix TableV`grade'[4,7] = _se[3.firstclasstype]
-		matrix TableV`grade'[5,7] = _b[whiteasian]
-		matrix TableV`grade'[6,7] = _se[whiteasian]
-		matrix TableV`grade'[7,7] = _b[gender]
-		matrix TableV`grade'[8,7] = _se[gender]
-		matrix TableV`grade'[9,7] = _b[`grade'freelunch]
-		matrix TableV`grade'[10,7] = _se[`grade'freelunch]
-		matrix TableV`grade'[17,7] = 1
-		matrix TableV`grade'[18,7] = e(r2)	
+		matrix TableV`grade'[1,7] = round(_b[1.firstclasstype],.01)
+		matrix TableV`grade'[2,7] = round(_se[1.firstclasstype],.01)
+		matrix TableV`grade'[3,7] = round(_b[3.firstclasstype],.01)
+		matrix TableV`grade'[4,7] = round(_se[3.firstclasstype],.01)
+		matrix TableV`grade'[5,7] = round(_b[whiteasian],.01)
+		matrix TableV`grade'[6,7] = round(_se[whiteasian],.01)
+		matrix TableV`grade'[7,7] = round(_b[gender],.01)
+		matrix TableV`grade'[8,7] = round(_se[gender],.01)
+		matrix TableV`grade'[9,7] = round(_b[`grade'freelunch],.01)
+		matrix TableV`grade'[10,7] = round(_se[`grade'freelunch],.01)
+		matrix TableV`grade'[19,7] = round(1,.01)
+		matrix TableV`grade'[20,7] = round(e(r2),.01)
 	}
 	qui foreach grade of global grades{
-		reg pct_sat_`grade' ib(2).firstclasstype whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' `grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
-		matrix TableV`grade'[1,8] = _b[1.firstclasstype]
-		matrix TableV`grade'[2,8] = _se[1.firstclasstype]
-		matrix TableV`grade'[3,8] = _b[3.firstclasstype]
-		matrix TableV`grade'[4,8] = _se[3.firstclasstype]
-		matrix TableV`grade'[5,8] = _b[whiteasian]
-		matrix TableV`grade'[6,8] = _se[whiteasian]
-		matrix TableV`grade'[7,8] = _b[gender]
-		matrix TableV`grade'[8,8] = _se[gender]
-		matrix TableV`grade'[9,8] = _b[`grade'freelunch]
-		matrix TableV`grade'[10,8] = _se[`grade'freelunch]
-		matrix TableV`grade'[11,8] = _b[whiteteacher`grade']
-		matrix TableV`grade'[12,8] = _se[whiteteacher`grade']
-		matrix TableV`grade'[13,8] = _b[`grade'tyears]
-		matrix TableV`grade'[14,8] = _se[`grade'tyears]
-		matrix TableV`grade'[15,8] = _b[masterteacher`grade']
-		matrix TableV`grade'[16,8] = _se[masterteacher`grade']	
-		matrix TableV`grade'[17,8] = 1
-		matrix TableV`grade'[18,8] = e(r2)
+		reg pct_sat_`grade' ib(2).firstclasstype whiteasian gender `grade'freelunch whiteteacher`grade' `grade'tgen `grade'tyears masterteacher`grade' i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableV`grade'[1,8] = round(_b[1.firstclasstype],.01)
+		matrix TableV`grade'[2,8] = round(_se[1.firstclasstype],.01)
+		matrix TableV`grade'[3,8] = round(_b[3.firstclasstype],.01)
+		matrix TableV`grade'[4,8] = round(_se[3.firstclasstype],.01)
+		matrix TableV`grade'[5,8] = round(_b[whiteasian],.01)
+		matrix TableV`grade'[6,8] = round(_se[whiteasian],.01)
+		matrix TableV`grade'[7,8] = round(_b[gender],.01)
+		matrix TableV`grade'[8,8] = round(_se[gender],.01)
+		matrix TableV`grade'[9,8] = round(_b[`grade'freelunch],.01)
+		matrix TableV`grade'[10,8] = round(_se[`grade'freelunch],.01)
+		matrix TableV`grade'[11,8] = round(_b[whiteteacher`grade'],.01)
+		matrix TableV`grade'[12,8] = round(_se[whiteteacher`grade'],.01)
+		matrix TableV`grade'[13,8] = round(_b[`grade'tgen],.01)
+		matrix TableV`grade'[14,8] = round(_se[`grade'tgen],.01)
+		matrix TableV`grade'[15,8] = round(_b[`grade'tyears],.01)
+		matrix TableV`grade'[16,8] = round(_se[`grade'tyears],.01)
+		matrix TableV`grade'[17,8] = round(_b[masterteacher`grade'],.01)
+		matrix TableV`grade'[18,8] = round(_se[masterteacher`grade']	,.01)
+		matrix TableV`grade'[19,8] = round(1,.01)
+		matrix TableV`grade'[20,8] = round(e(r2),.01)
 	}
 	
 
@@ -377,50 +381,50 @@
 		
 			**Free Lunch**
 				reg `grade'freelunch ibn.`grade'classtype if gradeenter=="`grade'", noconstant
-				matrix TableI`grade'[1,1] = _b[1.`grade'classtype]
-				matrix TableI`grade'[1,2] = _b[2.`grade'classtype]
-				matrix TableI`grade'[1,3] = _b[3.`grade'classtype]
+				matrix TableI`grade'[1,1] = round(_b[1.`grade'classtype],.01)
+				matrix TableI`grade'[1,2] = round(_b[2.`grade'classtype],.01)
+				matrix TableI`grade'[1,3] = round(_b[3.`grade'classtype],.01)
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-				matrix TableI`grade'[1,4] = r(p)
+				matrix TableI`grade'[1,4] = round(r(p),.01)
 			**White Asian**
 				reg whiteasian ibn.`grade'classtype if gradeenter=="`grade'", noconstant
-				matrix TableI`grade'[2,1] = _b[1.`grade'classtype]
-				matrix TableI`grade'[2,2] = _b[2.`grade'classtype]
-				matrix TableI`grade'[2,3] = _b[3.`grade'classtype]
+				matrix TableI`grade'[2,1] = round(_b[1.`grade'classtype],.01)
+				matrix TableI`grade'[2,2] = round(_b[2.`grade'classtype],.01)
+				matrix TableI`grade'[2,3] = round(_b[3.`grade'classtype],.01)
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-				matrix TableI`grade'[2,4] = r(p)
+				matrix TableI`grade'[2,4] = round(r(p),.01)
 
 			**Age in 1985**
 				reg age85 ibn.`grade'classtype if gradeenter=="`grade'", noconstant
-				matrix TableI`grade'[3,1] = _b[1.`grade'classtype]
-				matrix TableI`grade'[3,2] = _b[2.`grade'classtype]
-				matrix TableI`grade'[3,3] = _b[3.`grade'classtype]
+				matrix TableI`grade'[3,1] = round(_b[1.`grade'classtype],.01)
+				matrix TableI`grade'[3,2] = round(_b[2.`grade'classtype],.01)
+				matrix TableI`grade'[3,3] = round(_b[3.`grade'classtype],.01)
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-				matrix TableI`grade'[3,4] = r(p)
+				matrix TableI`grade'[3,4] = round(r(p),.01)
 
 			**Attrition**
 				reg attritions`grade' ibn.`grade'classtype if gradeenter=="`grade'", noconstant
-				matrix TableI`grade'[4,1] = _b[1.`grade'classtype]
-				matrix TableI`grade'[4,2] = _b[2.`grade'classtype]
-				matrix TableI`grade'[4,3] = _b[3.`grade'classtype]
+				matrix TableI`grade'[4,1] = round(_b[1.`grade'classtype],.01)
+				matrix TableI`grade'[4,2] = round(_b[2.`grade'classtype],.01)
+				matrix TableI`grade'[4,3] = round(_b[3.`grade'classtype],.01)
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-				matrix TableI`grade'[4,4] = r(p)
+				matrix TableI`grade'[4,4] = round(r(p),.01)
 
 			**Class Size**
 				reg `grade'classsize ibn.`grade'classtype if gradeenter=="`grade'", noconstant
-				matrix TableI`grade'[5,1] = _b[1.`grade'classtype]
-				matrix TableI`grade'[5,2] = _b[2.`grade'classtype]
-				matrix TableI`grade'[5,3] = _b[3.`grade'classtype]
+				matrix TableI`grade'[5,1] = round(_b[1.`grade'classtype],.01)
+				matrix TableI`grade'[5,2] = round(_b[2.`grade'classtype],.01)
+				matrix TableI`grade'[5,3] = round(_b[3.`grade'classtype],.01)
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-				matrix TableI`grade'[5,4] = r(p)
+				matrix TableI`grade'[5,4] = round(r(p),.01)
 
 			**Percentile**
 				reg pct_sat_`grade' ibn.`grade'classtype if gradeenter=="`grade'", noconstant
-				matrix TableI`grade'[6,1] = _b[1.`grade'classtype]
-				matrix TableI`grade'[6,2] = _b[2.`grade'classtype]
-				matrix TableI`grade'[6,3] = _b[3.`grade'classtype]
+				matrix TableI`grade'[6,1] = round(_b[1.`grade'classtype],.01)
+				matrix TableI`grade'[6,2] = round(_b[2.`grade'classtype],.01)
+				matrix TableI`grade'[6,3] = round(_b[3.`grade'classtype],.01)
 				test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-				matrix TableI`grade'[6,4] = r(p)
+				matrix TableI`grade'[6,4] = round(r(p),.01)
 
 		}
 
@@ -439,22 +443,22 @@
 	qui foreach grade of global grades{	
 		qui reg `grade'freelunch ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		matrix TableII[1,n] = r(p)
+		matrix TableII[1,n] = round(r(p),.01)
 		qui reg whiteasian ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		matrix TableII[2,n] = r(p)
+		matrix TableII[2,n] = round(r(p),.01)
 		qui reg age85 ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		matrix TableII[3,n] = r(p)
+		matrix TableII[3,n] = round(r(p),.01)
 		qui reg attritions`grade' ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		matrix TableII[4,n] = r(p)
+		matrix TableII[4,n] = round(r(p),.01)
 		qui reg `grade'classsize ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		matrix TableII[5,n] = r(p)
+		matrix TableII[5,n] = round(r(p),.01)
 		qui reg pct_sat_`grade' ibn.`grade'classtype i.`grade'schid if gradeenter=="`grade'", noconstant
 		qui test i1.`grade'classtype == i2.`grade'classtype == i3.`grade'classtype
-		matrix TableII[6,n] = r(p)
+		matrix TableII[6,n] = round(r(p),.01)
 		replace n = n+1
 	}
 	qui drop n
@@ -469,18 +473,18 @@
 	qui matrix rowname TableIII = "12" "13" "14" "15" "16" "17" "18" "19" "20" "21" "22" "23" "24" "25" "26" "27" "28" "29" "30" "Average Class Size"
 	qui forvalues i = 12(1)30{
 		sum g1classtype if g1classsize == `i' & g1classtype == 1
-		matrix TableIII[`i'-11,1] = r(N)
+		matrix TableIII[`i'-11,1] = round(r(N),.01)
 		sum g1classtype if g1classsize == `i' & g1classtype == 2
-		matrix TableIII[`i'-11,2] = r(N)
+		matrix TableIII[`i'-11,2] = round(r(N),.01)
 		sum g1classtype if g1classsize == `i' & g1classtype == 3
-		matrix TableIII[`i'-11,3] = r(N)
+		matrix TableIII[`i'-11,3] = round(r(N),.01)
 	}
 	qui sum g1classsize if g1classtype == 1
-	qui matrix TableIII[20,1] = r(mean)
+	qui matrix TableIII[20,1] = round(r(mean),.01)
 	qui sum g1classsize if g1classtype == 2
-	qui matrix TableIII[20,2] = r(mean)
+	qui matrix TableIII[20,2] = round(r(mean),.01)
 	qui sum g1classsize if g1classtype == 3
-	qui matrix TableIII[20,3] = r(mean)
+	qui matrix TableIII[20,3] = round(r(mean),.01)
 	
  
 *** Table VII ***
@@ -491,12 +495,12 @@
 	qui foreach grade of global grades{
 		*Todo: Add the weakivtest here if possible
 		reg pct_sat_`grade' `grade'classsize whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
-		matrix TableVII[n,1] = _b[`grade'classsize]
-		matrix TableVII[n+1,1] = _se[`grade'classsize]
-		ivregress 2sls pct_sat_`grade' (`grade'classsize = i.`grade'classtype) whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
-		matrix TableVII[n,2] = _b[`grade'classsize]
-		matrix TableVII[n+1,2] = _se[`grade'classsize]
-		matrix TableVII[n,3] = e(N)
+		matrix TableVII[n,1] = round(_b[`grade'classsize],.01)
+		matrix TableVII[n+1,1] = round(_se[`grade'classsize],.01)
+		ivregress 2sls pct_sat_`grade' (`grade'classsize = i.firstclasstype) whiteasian gender `grade'freelunch whiteteacher`grade' masterteacher`grade' i.`grade'tyears i.`grade'schid, vce(cluster `grade'tchid)
+		matrix TableVII[n,2] = round(_b[`grade'classsize],.01)
+		matrix TableVII[n+1,2] = round(_se[`grade'classsize],.01)
+		matrix TableVII[n,3] = round(e(N),.01)
 		replace n = n+2
 		*weakivtest
 	}
